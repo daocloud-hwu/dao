@@ -97,7 +97,7 @@ func  (c *Client) GetStack(id string) (*Stack, error) {
 }
 
 func  (c *Client) GetStackState(id string) (string, error) {
-    status, body, _, err := c.do("GET", fmt.Sprintf("/v1/stacks/%s/state"), nil, nil, false)
+    status, body, _, err := c.do("GET", fmt.Sprintf("/v1/stacks/%s/state", id), nil, nil, false)
     if err != nil {
         return "", err
     }
@@ -116,7 +116,7 @@ func  (c *Client) GetStackState(id string) (string, error) {
 }
 
 func (c *Client) StartStack(id string) error {
-    status, _, _, err := c.do("POST", fmt.Sprintf("/v1/stacks/%s/actions/start"), nil, nil, false)
+    status, _, _, err := c.do("POST", fmt.Sprintf("/v1/stacks/%s/actions/start", id), nil, nil, false)
     if err != nil {
         return err
     }
@@ -128,7 +128,7 @@ func (c *Client) StartStack(id string) error {
 }
 
 func (c *Client) StopStack(id string) error {
-    status, _, _, err := c.do("POST", fmt.Sprintf("/v1/stacks/%s/actions/stop"), nil, nil, false)
+    status, _, _, err := c.do("POST", fmt.Sprintf("/v1/stacks/%s/actions/stop", id), nil, nil, false)
     if err != nil {
         return err
     }
@@ -140,7 +140,7 @@ func (c *Client) StopStack(id string) error {
 }
 
 func (c *Client) DeleteStack(id string) error {
-    status, _, _, err := c.do("DELETE", fmt.Sprintf("/v1/stacks/%s"), nil, nil, false)
+    status, _, _, err := c.do("DELETE", fmt.Sprintf("/v1/stacks/%s", id), nil, nil, false)
     if err != nil {
         return err
     }
