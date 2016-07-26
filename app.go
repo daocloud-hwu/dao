@@ -100,6 +100,21 @@ func (c *Client) ListApp() ([]*App, error) {
     return result.Apps, nil
 }
 
+func (c *Client) GetApp(id string) (*App, error) {
+    apps, err := c.ListApp()
+    if err != nil {
+        return nil, err
+    }
+
+    for _, app := range apps {
+        if app.ID == id {
+            return app, nil
+        }
+    }
+
+    return nil, nil
+}
+
 func  (c *Client) GetAppState(id string) (string, error) {
     status, body, _, err := c.do("GET", fmt.Sprintf("/v1/apps/%s/state", id), nil, nil, false)
     if err != nil {
