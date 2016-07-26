@@ -11,7 +11,7 @@ type App struct {
     Runtime *Runtime `json:"runtime"`
 }
 
-func (c *Client) CreateSrApp(appName, pid, release, nodeName string, ports map[int]int) error {
+func (c *Client) CreateSrApp(appName, pid, release, nodeName string, ports map[int]int) (string, error) {
     type Port struct {
         ContainerPort int `json:"container_port"`
         HostPort int `json:"host_port"`
@@ -60,18 +60,25 @@ func (c *Client) CreateSrApp(appName, pid, release, nodeName string, ports map[i
 
     inbody, err := json.Marshal(app)
     if err != nil {
-        return err
+        return "", err
     }
 
-    status, _, _, err := c.do("POST", "/v1/apps", nil, inbody, false)
+    status, outbody, _, err := c.do("POST", "/v1/apps", nil, inbody, false)
     if err != nil {
-        return err
+        return "", err
     }
     if status/100 != 2 {
-        return fmt.Errorf("Status code is %d", status)
+        return "", fmt.Errorf("Status code is %d, reason %s", status, outbody)
     }
 
-    return nil
+    result := struct {
+        AppID string `json:"app_id"`
+    } {}
+    if err := json.Unmarshal(outbody, &result); err != nil {
+        return "", err
+    }
+
+    return result.AppID, nil
 }
 
 func (c *Client) ListApp() ([]*App, error) {
@@ -94,7 +101,7 @@ func (c *Client) ListApp() ([]*App, error) {
 }
 
 func  (c *Client) GetAppState(id string) (string, error) {
-    status, body, _, err := c.do("GET", fmt.Sprintf("/v1/apps/%s/state"), nil, nil, false)
+    status, body, _, err := c.do("GET", fmt.Sprintf("/v1/apps/%s/state", id), nil, nil, false)
     if err != nil {
         return "", err
     }
@@ -113,7 +120,7 @@ func  (c *Client) GetAppState(id string) (string, error) {
 }
 
 func (c *Client) StartApp(id string) error {
-    status, _, _, err := c.do("POST", fmt.Sprintf("/v1/apps/%s/actions/start"), nil, nil, false)
+    status, _, _, err := c.do("POST", fmt.Sprintf("/v1/apps/%s/actions/start", id), nil, nil, false)
     if err != nil {
         return err
     }
@@ -125,7 +132,7 @@ func (c *Client) StartApp(id string) error {
 }
 
 func (c *Client) StopApp(id string) error {
-    status, _, _, err := c.do("POST", fmt.Sprintf("/v1/apps/%s/actions/stop"), nil, nil, false)
+    status, _, _, err := c.do("POST", fmt.Sprintf("/v1/apps/%s/actions/stop", id), nil, nil, false)
     if err != nil {
         return err
     }
@@ -137,7 +144,7 @@ func (c *Client) StopApp(id string) error {
 }
 
 func (c *Client) DeleteApp(id string) error {
-    status, _, _, err := c.do("DELETE", fmt.Sprintf("/v1/apps/%s"), nil, nil, false)
+    status, _, _, err := c.do("DELETE", fmt.Sprintf("/v1/apps/%s", id), nil, nil, false)
     if err != nil {
         return err
     }

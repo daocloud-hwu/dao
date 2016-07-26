@@ -81,6 +81,7 @@ func (c *Client) do(method, url string, header map[string]string, body []byte, i
     }
 
     req.Header.Set("Authorization", c.AuthToken)
+    req.Header.Set("Content-Type", "application/json")
     if internal {
         // TBD
     }
