@@ -11,7 +11,7 @@ type Stack struct {
     Apps []*App `json:"apps"`
 }
 
-func (c *Client) CreateStack(stackName, nodeName, yml string) error {
+func (c *Client) CreateStack(stackName, nodeName, yml string) (string, error) {
     type Options struct {
         Yml string `json:"compose_yml"`
     }
@@ -41,18 +41,25 @@ func (c *Client) CreateStack(stackName, nodeName, yml string) error {
 
     inbody, err := json.Marshal(s)
     if err != nil {
-        return err
+        return "", err
     }
 
-    status, _, _, err := c.do("POST", "/v1/stacks", nil, inbody, false)
+    status, outbody, _, err := c.do("POST", "/v1/stacks", nil, inbody, false)
     if err != nil {
-        return err
+        return "", err
     }
     if status/100 != 2 {
-        return fmt.Errorf("Status code is %d", status)
+        return "", fmt.Errorf("Status code is %d, reason %s", status, outbody)
     }
 
-    return nil
+    result := struct {
+        StackID string `json:"stack_id"`
+    } {}
+    if err := json.Unmarshal(outbody, &result); err != nil {
+        return "", err
+    }
+
+    return result.StackID, nil
 }
 
 func (c *Client) ListStack() ([]*Stack, error) {
@@ -72,6 +79,21 @@ func (c *Client) ListStack() ([]*Stack, error) {
     }
 
     return result.Stacks, nil
+}
+
+func  (c *Client) GetStack(id string) (*Stack, error) {
+    ss, err := c.ListStack()
+    if err != nil {
+        return nil, err
+    }
+
+    for _, s := range ss {
+        if s.ID == id {
+            return s, nil
+        }
+    }
+
+    return nil, nil
 }
 
 func  (c *Client) GetStackState(id string) (string, error) {
