@@ -11,6 +11,101 @@ type App struct {
     Runtime *Runtime `json:"runtime"`
 }
 
+func (c *Client) CreateCfApp(appName, pid, release, instanceType string, port int) (string, error) {
+    type Port struct {
+        ContainerPort int    `json:"container_port"`
+        Protocol      string `json:"protocol"`
+        PublishType   string `json:"publish_type"`
+        External      string `json:"external"`
+    }
+
+    type Instance struct {
+        ID    string `json:"service_instance_id"`
+        Alias string `json:"service_alias"`
+    }
+
+    type Metadata struct {
+        Command          string      `json:"command"`
+        Volumes          []string    `json:"volumes"`
+        InstanceType     string      `json:"instance_type"`
+        ExposePorts      []*Port     `json:"expose_ports"`
+        ServiceInstances []*Instance `json:"service_instances"`
+    }
+
+    type Options struct {
+        StartAfterStage bool `json:"start_after_stage"`
+    }
+
+    type CfApp struct {
+        Name         string            `json:"name"`
+        RuntimeID    string            `json:"runtime_id"`
+        PackageID    string            `json:"package_id"`
+        ReleaseName  string            `json:"release_name"`
+        Instances    int               `json:"instances"`
+        EnvVar       map[string]string `json:"env_vars"`
+        Metadata     *Metadata         `json:"metadata"`
+        ExtraOptions *Options          `json:"extra_options"`
+    }
+
+    m := new(Metadata)
+    m.Command = ""
+    m.Volumes = make([]string, 0)
+    m.InstanceType = instanceType
+    m.ExposePorts = []*Port{&Port{ContainerPort: port, Protocol: "tcp", PublishType: "http", External: "external"}}
+    m.ServiceInstances = make([]*Instance, 0)
+
+    app := new(CfApp)
+    app.Name = appName
+    app.RuntimeID = "a849cdf2-c79e-4c29-83ca-50751cc388a5"
+    app.PackageID = pid
+    app.ReleaseName = release
+    app.Instances = 1
+    app.EnvVar = make(map[string]string)
+    app.Metadata = m
+    app.ExtraOptions = &Options{StartAfterStage: true}
+
+    inbody, err := json.Marshal(app)
+    if err != nil {
+        return "", err
+    }
+
+    status, outbody, _, err := c.do("POST", "/v1/apps", nil, inbody, false)
+    if err != nil {
+        return "", err
+    }
+    if status/100 != 2 {
+        return "", fmt.Errorf("Status code is %d, reason %s", status, outbody)
+    }
+
+    result := struct {
+        AppID string `json:"app_id"`
+    } {}
+    if err := json.Unmarshal(outbody, &result); err != nil {
+        return "", err
+    }
+
+    return result.AppID, nil
+}
+
+func (c *Client) GetAppUrl(id string) (string, error) {
+    status, body, _, err := c.do("GET", fmt.Sprintf("/v1/apps/%s/details", id), nil, nil, false)
+    if err != nil {
+        return "", err
+    }
+    if status/100 != 2 {
+        return "", fmt.Errorf("Status code is %d, reason %s", status, body)
+    }
+
+    result := struct {
+        Url string `json:"url"`
+    } {}
+    if err := json.Unmarshal(body, &result); err != nil {
+        return "", err
+    }
+
+    return result.Url, nil
+}
+
 func (c *Client) CreateSrApp(appName, pid, release, nodeName string, ports map[int]int) (string, error) {
     type Port struct {
         ContainerPort int `json:"container_port"`
