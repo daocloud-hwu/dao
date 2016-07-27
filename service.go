@@ -69,7 +69,7 @@ func (c *Client) ListServiceInstance() ([]*ServiceInstance, error) {
     }
 
     result := struct {
-        ServiceInstances []*ServiceInstance `json:"service_services"`
+        ServiceInstances []*ServiceInstance `json:"service_instances"`
     } {}
     if err := json.Unmarshal(body, &result); err != nil {
         return nil, err
