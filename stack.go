@@ -62,6 +62,35 @@ func (c *Client) CreateStack(stackName, nodeName, yml string) (string, error) {
     return result.StackID, nil
 }
 
+func (c *Client) UpdateStackYml(id, yml string) error {
+    type Options struct {
+        Yml string `json:"compose_yml"`
+        Op string `json:"operation"`
+    }
+
+    type StackT struct {
+        ExtraOptions *Options `json:"extra_options"`
+    }
+
+    options := &Options{Yml: yml, Op: "update_compose_yml"}
+    s := StackT{ExtraOptions: options}
+
+    inbody, err := json.Marshal(s)
+    if err != nil {
+        return err
+    }
+
+    status, outbody, _, err := c.do("PATCH", fmt.Sprintf("/v1/stacks/%s", id), nil, inbody, false)
+    if err != nil {
+        return err
+    }
+    if status/100 != 2 {
+        return fmt.Errorf("Status code is %d, reason %s", status, outbody)
+    }
+
+    return nil
+}
+
 func (c *Client) ListStack() ([]*Stack, error) {
     status, body, _, err := c.do("GET", "/v1/stacks", nil, nil, false)
     if err != nil {

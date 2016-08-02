@@ -11,8 +11,9 @@ import (
 
 type Client struct {
     Host string
-    InternalToken string
     AuthToken string
+    InternalHost string
+    InternalToken string
 }
 
 type Runtime struct {
@@ -32,7 +33,36 @@ func (c *Client) DeleteUser(user string) error {
 }
 
 func (c *Client) Login(user, passwd string) error {
-    // TBD
+    type Info struct {
+        Username string `json:"email_or_mobile"`
+        Password string `json:"password"`
+    }
+
+    info := new(Info)
+    info.Username = user
+    info.Password = passwd
+
+    inbody, err := json.Marshal(info)
+    if err != nil {
+        return err
+    }
+
+    status, outbody, _, err := c.do("POST", "/internal/access-token", nil, inbody, true)
+    if err != nil {
+        return err
+    }
+    if status/100 != 2 {
+        return fmt.Errorf("Status code is %d, reason %s", status, outbody)
+    }
+
+    result := struct {
+        Token string `json:"access_token"`
+    } {}
+    if err := json.Unmarshal(outbody, &result); err != nil {
+        return err
+    }
+
+    c.AuthToken = result.Token
     return nil
 }
 
@@ -67,11 +97,13 @@ func (c *Client) do(method, url string, header map[string]string, body []byte, i
 
     client := &http.Client{}
     client.Transport = &http.Transport{DisableKeepAlives: true}
-    req, err := http.NewRequest(
-        method,
-        fmt.Sprintf("http://%s%s", c.Host, url),
-        reader,
-    )
+
+    link := fmt.Sprintf("http://%s%s", c.Host, url)
+    if internal {
+        link = fmt.Sprintf("http://%s%s", c.InternalHost, url)
+    }
+
+    req, err := http.NewRequest(method, link, reader)
     if err != nil {
         return 0, nil, nil, err
     }
@@ -83,7 +115,9 @@ func (c *Client) do(method, url string, header map[string]string, body []byte, i
     req.Header.Set("Authorization", c.AuthToken)
     req.Header.Set("Content-Type", "application/json")
     if internal {
-        // TBD
+        req.Header.Set("X-DAO-INTERNAL-TOKEN", c.InternalToken)
+    } else {
+        req.Header.Set("Authorization", c.AuthToken)
     }
 
     res, err := client.Do(req)
