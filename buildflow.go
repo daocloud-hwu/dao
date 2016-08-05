@@ -164,7 +164,7 @@ func (c *Client) GetBuildByTag(buildflowID, tag string) (*Build, error) {
     return nil, nil
 }
 
-func (c *Client) PostManualBuild(buildflowID, branch string) (string, error) {
+func (c *Client) PostManualBuild(buildflowID, branch string) (int, error) {
     type BuildInfo struct {
         Type string `json:"build_type"`
         Name string `json:"name"`
@@ -174,20 +174,20 @@ func (c *Client) PostManualBuild(buildflowID, branch string) (string, error) {
     url := fmt.Sprintf("/v1/buildflows/%s/builds", buildflowID)
     inbody, err := json.Marshal(bi)
     if err != nil {
-        return "", err
+        return 0, err
     }
 
     status, outbody, _, err := c.do("POST", url, nil, inbody, false)
     if err != nil {
-        return "", err
+        return 0, err
     }
     if status/100 != 2 {
-        return "", fmt.Errorf("Status code is %d, reason %s", status, outbody)
+        return 0, fmt.Errorf("Status code is %d, reason %s", status, outbody)
     }
 
     result := new(Build)
     if err := json.Unmarshal(outbody, result); err != nil {
-        return "", err
+        return 0, err
     }
 
     return result.ID, nil
