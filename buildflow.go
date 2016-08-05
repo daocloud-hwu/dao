@@ -13,7 +13,7 @@ type Buildflow struct {
 }
 
 type Build struct {
-    ID            string `json:"id"`
+    ID            int    `json:"id"`
     Status        string `json:"status"`
     Tag           string `json:"tag"`
     TriggerMethod string `json:"trigger_method"`
@@ -21,7 +21,7 @@ type Build struct {
 }
 
 type CiBuild struct {
-    ID        string `json:"id"`
+    ID        int    `json:"id"`
     Status    string `json:"status"`
     CreatedAt int64  `json:"created_at"`
     Message   string `json:"message"`
@@ -132,6 +132,21 @@ func (c *Client) ListBuild(buildflowID string) ([]*Build, error) {
     }
 
     return result.Builds, nil
+}
+
+func (c *Client) GetBuild(buildflowID string, id int) (*Build, error) {
+    builds, err := c.ListBuild(buildflowID)
+    if err != nil {
+        return nil, err
+    }
+
+    for _, b := range builds {
+        if b.ID == id {
+            return b, nil
+        }
+    }
+
+    return nil, nil
 }
 
 func (c *Client) GetBuildByTag(buildflowID, tag string) (*Build, error) {
