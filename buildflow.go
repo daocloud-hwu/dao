@@ -13,7 +13,7 @@ type Project struct {
 
 type Buildflow struct {
 	Project     *Project `json:"project"`
-	LatestBuild *Build   `json:"latest_build"`
+	LatestBuild *Build   `json:"last_build"`
 }
 
 type Build struct {
@@ -41,13 +41,14 @@ func (c *Client) ListBuildflow() ([]*Buildflow, error) {
 	}
 
 	result := struct {
-		projects []*Buildflow `json:"projects"`
+		Projects   []*Buildflow `json:"projects"`
+		TotalCount int          `json:"total_count"`
 	}{}
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, err
 	}
 
-	return result.projects, nil
+	return result.Projects, nil
 }
 
 func (c *Client) GetBuildflowByName(name string) (*Buildflow, error) {
@@ -66,7 +67,7 @@ func (c *Client) GetBuildflowByName(name string) (*Buildflow, error) {
 }
 
 func (c *Client) GetBuildflow(id string) (*Buildflow, error) {
-	url := fmt.Sprintf("/v1/project/%s", id)
+	url := fmt.Sprintf("/v1/ship/project/%s", id)
 	status, body, _, err := c.do("GET", url, nil, nil, false)
 	if err != nil {
 		return nil, err
@@ -84,7 +85,7 @@ func (c *Client) GetBuildflow(id string) (*Buildflow, error) {
 }
 
 func (c *Client) ListCiBuild(buildflowID string) ([]*CiBuild, error) {
-	url := fmt.Sprintf("/v1/project/%s/ci_build?size=-1&offset=0", buildflowID)
+	url := fmt.Sprintf("/v1/ship/project/%s/ci_build?size=-1&offset=0", buildflowID)
 	status, body, _, err := c.do("GET", url, nil, nil, false)
 	if err != nil {
 		return nil, err
@@ -94,7 +95,7 @@ func (c *Client) ListCiBuild(buildflowID string) ([]*CiBuild, error) {
 	}
 
 	result := struct {
-		CiBuilds []*CiBuild `json:"ci_build_history"`
+		CiBuilds []*CiBuild `json:"builds"`
 	}{}
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, err
@@ -119,7 +120,7 @@ func (c *Client) GetCiBuildByMessage(buildflowID, message string) (*CiBuild, err
 }
 
 func (c *Client) ListBuild(buildflowID string) ([]*Build, error) {
-	url := fmt.Sprintf("/v1/project/%s/image_build?size=-1&offset=0", buildflowID)
+	url := fmt.Sprintf("/v1/ship/project/%s/image_build?size=-1&offset=0", buildflowID)
 	status, body, _, err := c.do("GET", url, nil, nil, false)
 	if err != nil {
 		return nil, err
@@ -129,7 +130,7 @@ func (c *Client) ListBuild(buildflowID string) ([]*Build, error) {
 	}
 
 	result := struct {
-		Builds []*Build `json:"build_history"`
+		Builds []*Build `json:"builds"`
 	}{}
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, err
@@ -174,7 +175,7 @@ func (c *Client) PostManualBuild(buildflowID, branch string) (int, error) {
 	}
 
 	bi := &BuildInfo{Branch: branch}
-	url := fmt.Sprintf("/v1/project/%s/image_build", buildflowID)
+	url := fmt.Sprintf("/v1/ship/project/%s/image_build", buildflowID)
 	inbody, err := json.Marshal(bi)
 	if err != nil {
 		return 0, err
