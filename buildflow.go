@@ -19,6 +19,8 @@ type Buildflow struct {
 type Build struct {
 	ID            int    `json:"id"`
 	Status        string `json:"status"`
+	Sha           string `json:"sha"`
+	Branch        string `json:"branch"`
 	Tag           string `json:"tag"`
 	TriggerMethod string `json:"trigger_method"`
 	CreatedAt     int64  `json:"created_at"`
@@ -27,6 +29,8 @@ type Build struct {
 type CiBuild struct {
 	ID        int    `json:"id"`
 	Status    string `json:"status"`
+	Sha       string `json:"sha"`
+	Branch    string `json:"branch"`
 	CreatedAt int64  `json:"created_at"`
 	Message   string `json:"message"`
 }
