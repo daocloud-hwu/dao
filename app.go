@@ -264,3 +264,122 @@ func (c *Client) DeleteApp(id string) error {
 
     return nil
 }
+
+func (c *Client) RestageApp(id string, packageId string, releaseName string, startAfterStage bool) (string, error) {
+    type Option struct {
+        StartAfterStage bool `json:"start_after_stage"`
+    }
+
+    type RequestMetadata struct {
+        PackageId string `json:"package_id"`
+        ReleaseName string `json:"release_name"`
+        ExtraOption *Option `json:"extra_options"`
+    }
+
+    rm := new(RequestMetadata)
+    rm.PackageId = packageId
+    rm.ReleaseName = releaseName
+    o := new(Option)
+    o.StartAfterStage = true
+    rm.ExtraOption = o
+
+    inbody, err := json.Marshal(rm)
+    if err != nil {
+        return "", err
+    }
+
+    status, outbody, _, err := c.do("POST", fmt.Sprintf("/v1/apps/%s/actions/restage", id), nil, inbody, false)
+    if err != nil {
+        return "", err
+    }
+    if status/100 != 2 {
+        return "", fmt.Errorf("Status code is %d, reason %s", status, outbody)
+    }
+
+    result := struct {
+        AppID string `json:"app_id"`
+    } {}
+    if err := json.Unmarshal(outbody, &result); err != nil {
+        return "", err
+    }
+    return result.AppID, nil
+}
+
+
+func (c *Client) UpdateAppYml(id string, yml string) error {
+    type Options struct {
+        Yml string `json:"compose_yml"`
+        Op string `json:"operation"`
+    }
+
+    type AppT struct {
+        ExtraOptions *Options `json:"extra_options"`
+    }
+    options := &Options{Yml: yml, Op: "update_compose_yml"}
+    s := AppT{ExtraOptions: options}
+
+    inbody, err := json.Marshal(s)
+    if err != nil {
+        return err
+    }
+
+    status, outbody, _, err := c.do("PATCH", fmt.Sprintf("/v1/apps/%s", id), nil, inbody, false)
+    if err != nil {
+        return err
+    }
+    if status/100 != 2 {
+        return fmt.Errorf("Status code is %d, reason %s", status, outbody)
+    }
+
+    return nil
+}
+
+
+func (c *Client) BindServiceInstance(id string, serviceInstanceId string, serviceAlias string) error {
+    type Instance struct {
+        ID    string `json:"service_instance_id"`
+        Alias string `json:"service_alias"`
+    }
+
+    type Metadata struct {
+        ServiceInstances []*Instance `json:"service_instances"`
+    }
+
+    type Options struct {
+        Operation string `json:"operation"`
+    }
+
+    type RequestMetadata struct {
+        Metadata *Metadata `json:"metadata"`
+        ExtraOption *Options `json:"extra_options"`
+
+    }
+    i := new(Instance)
+    i.ID = serviceInstanceId
+    i.Alias = serviceAlias
+
+    m := new(Metadata)
+    m.ServiceInstances = append(make([]*Instance, 0), i)
+
+    o := new(Options)
+    o.Operation = "service_instances"
+
+    rm := new(RequestMetadata)
+    rm.Metadata = m
+    rm.ExtraOption = o
+
+    inbody, err := json.Marshal(rm)
+    if err != nil {
+        return err
+    }
+    //fmt.Printf("request data:\t%s\n", inbody)
+    status, outbody, _,  err := c.do("PATCH", fmt.Sprintf("/v1/apps/%s", id), nil, inbody, false)
+    if err != nil {
+        return err
+    }
+    if status/100 != 2 {
+        return fmt.Errorf("Status code is %d, reason %s\n", status, outbody)
+    }
+
+    return nil
+}
