@@ -106,6 +106,27 @@ func (c *Client) GetAppUrl(id string) (string, error) {
     return result.Url, nil
 }
 
+func (c *Client) SetAppAutoDelpoy(id string) (bool, error) {
+    type Body struct {
+        AutoDeploy bool `json:"auto_deploy"`
+    }
+
+    data := new(Body)
+    data.AutoDeploy = true
+    inbody, err := json.Marshal(data)
+    if err != nil {
+        return false, err
+    }
+    status, body, _, err := c.do("PATCH", fmt.Sprintf("/v1/apps/%s/auto_deploy", id), nil, inbody, false)
+    if err != nil {
+        return false, err
+    }
+    if status / 100 != 2 {
+        return false, fmt.Errorf("Status code is %d, reason %s", status, body)
+    }
+    return true, nil
+}
+
 func (c *Client) CreateSrApp(appName, pid, release, nodeName string, ports map[int]int) (string, error) {
     type Port struct {
         ContainerPort int `json:"container_port"`
