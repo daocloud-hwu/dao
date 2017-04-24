@@ -7,6 +7,7 @@ import (
     "io"
     "io/ioutil"
     "net/http"
+    "time"
 )
 
 type Client struct {
@@ -95,7 +96,7 @@ func (c *Client) do(method, url string, header map[string]string, body []byte, i
         reader = bytes.NewBuffer(body)
     }
 
-    client := &http.Client{}
+    client := &http.Client{Timeout: 10 * time.Second}
     client.Transport = &http.Transport{DisableKeepAlives: true}
 
     link := fmt.Sprintf("http://%s%s", c.Host, url)
