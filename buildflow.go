@@ -24,6 +24,7 @@ type Build struct {
 	Tag           string `json:"tag"`
 	TriggerMethod string `json:"trigger_method"`
 	CreatedAt     int64  `json:"created_at"`
+	Message       string `json:"message"`
 }
 
 type CiBuild struct {
@@ -88,28 +89,8 @@ func (c *Client) GetBuildflow(id string) (*Buildflow, error) {
 	return result, nil
 }
 
-func (c *Client) ListCiBuild(buildflowID string) ([]*CiBuild, error) {
-	url := fmt.Sprintf("/v1/ship/project/%s/ci_build?size=-1&offset=0", buildflowID)
-	status, body, _, err := c.do("GET", url, nil, nil, false)
-	if err != nil {
-		return nil, err
-	}
-	if status/100 != 2 {
-		return nil, fmt.Errorf("Status code is %d", status)
-	}
-
-	result := struct {
-		CiBuilds []*CiBuild `json:"builds"`
-	}{}
-	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, err
-	}
-
-	return result.CiBuilds, nil
-}
-
-func (c *Client) GetCiBuildByMessage(buildflowID, message string) (*CiBuild, error) {
-	cibuilds, err := c.ListCiBuild(buildflowID)
+func (c *Client) GetCiBuildByMessage(buildflowID, message string) (*Build, error) {
+	cibuilds, err := c.ListBuild(buildflowID)
 	if err != nil {
 		return nil, err
 	}
