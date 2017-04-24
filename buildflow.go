@@ -20,7 +20,7 @@ type Build struct {
 	ID            int    `json:"id"`
 	Status        string `json:"status"`
 	Sha           string `json:"sha"`
-	Branch        string `json:"branch"`
+	Ref 	      string `json:"ref"`
 	Tag           string `json:"tag"`
 	TriggerMethod string `json:"trigger_method"`
 	CreatedAt     int64  `json:"created_at"`
@@ -30,7 +30,7 @@ type CiBuild struct {
 	ID        int    `json:"id"`
 	Status    string `json:"status"`
 	Sha       string `json:"sha"`
-	Branch    string `json:"branch"`
+	Ref 	  string `json:"ref"`
 	CreatedAt int64  `json:"created_at"`
 	Message   string `json:"message"`
 }
@@ -124,7 +124,7 @@ func (c *Client) GetCiBuildByMessage(buildflowID, message string) (*CiBuild, err
 }
 
 func (c *Client) ListBuild(buildflowID string) ([]*Build, error) {
-	url := fmt.Sprintf("/v1/ship/project/%s/image_build?size=-1&offset=0", buildflowID)
+	url := fmt.Sprintf("/v1/ship/project/%s/pipelines?size=-1&offset=0", buildflowID)
 	status, body, _, err := c.do("GET", url, nil, nil, false)
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (c *Client) PostManualBuild(buildflowID, branch string) (int, error) {
 	}
 
 	bi := &BuildInfo{Branch: branch}
-	url := fmt.Sprintf("/v1/ship/project/%s/image_build", buildflowID)
+	url := fmt.Sprintf("/v1/ship/project/%s/pipelines", buildflowID)
 	inbody, err := json.Marshal(bi)
 	if err != nil {
 		return 0, err
